@@ -137,8 +137,8 @@ export const updateNote: RequestHandler<
       return res.status(401).json({ error: 'Access denied. Token missing.' });
     }
 
-    const decoded = jwt.verify(token, TOKEN_SECRET);
-    const userId = (decoded as any).userId;
+    const decoded: any = jwt.verify(token, TOKEN_SECRET);
+    const userId = decoded.user.id;
 
     const existingNote = await prisma.note.findUnique({
       where: {
@@ -147,10 +147,16 @@ export const updateNote: RequestHandler<
     });
 
     if (!existingNote) {
-      return res.status(400).json({ error: 'Note doesnot exist' });
+      return res.status(400).json({ error: 'Note does not exist' });
     }
 
-    const note = await prisma.note.update({
+    if (existingNote.userId !== userId) {
+      return res.status(403).json({
+        error: 'Access denied. User not authorized to delete this note.',
+      });
+    }
+
+    const updatedNote = await prisma.note.update({
       where: {
         id: noteId,
       },
@@ -161,7 +167,8 @@ export const updateNote: RequestHandler<
         priority,
       },
     });
-    res.json(note);
+
+    res.json(updatedNote);
   } catch (error) {
     console.error(error);
     res
@@ -185,7 +192,7 @@ export const deleteNote: RequestHandler = async (req, res) => {
     }
 
     const decoded = jwt.verify(token, TOKEN_SECRET);
-    const userId = (decoded as any).userId;
+    const userId = (decoded as any).user.id;
 
     const existingNote = await prisma.note.findUnique({
       where: {
@@ -195,6 +202,12 @@ export const deleteNote: RequestHandler = async (req, res) => {
 
     if (!existingNote) {
       return res.status(400).json({ error: 'Note does not exist' });
+    }
+
+    if (existingNote.userId !== userId) {
+      return res.status(403).json({
+        error: 'Access denied. User not authorized to update this note.',
+      });
     }
 
     await prisma.note.delete({
