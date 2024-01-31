@@ -9,9 +9,7 @@ const Home = () => {
   });
 
   // Remove backend-related useEffect
-  useEffect(() => {
-    // You can keep this useEffect for local storage or modify it as needed
-  }, []);
+  useEffect(() => {}, []);
 
   // Add Notes
   const [title, setTitle] = useState('');
