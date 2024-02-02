@@ -1,7 +1,6 @@
-import React from "react";
+import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
-
 
 const NotesGrid = ({ notes, handleNoteClick, handleDeleteNote }) => (
   <div className="notes-grid">
@@ -17,7 +16,7 @@ const NotesGrid = ({ notes, handleNoteClick, handleDeleteNote }) => (
           </button>
         </div>
         <h2>{note.title}</h2>
-        <div className='flex justify-around'>
+        <div className="flex justify-around">
           <p className="text-xs ">Priority: {note.priority}</p>
           <p className="text-xs ">Category: {note.category}</p>
         </div>

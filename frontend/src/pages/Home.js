@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import NoteForm from '../components/NoteForm';
 import NotesGrid from '../components/NoteGrid';
+import useAuthStore from '../authStore';
 
 const Home = () => {
-  const [notes, setNotes] = useState(() => {
-    const storedNotes = JSON.parse(localStorage.getItem('notes'));
-    return storedNotes || [];
-  });
-
-  // Remove backend-related useEffect
-  useEffect(() => {}, []);
-
+  const authStore = useAuthStore();
+  // const [notes, setNotes] = useState(() => {
+  //   const storedNotes = JSON.parse(localStorage.getItem('notes'));
+  //   return storedNotes || [];
+  // });
+  const [notes, setNotes] = useState([]);
   // Add Notes
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -26,7 +25,41 @@ const Home = () => {
 
   const [formSubmitted, setFormSubmitted] = useState(false);
 
-  const handleAddNotes = (event) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchNotes = async () => {
+      try {
+        // Check if the component is still mounted and the user is authenticated
+        if (isMounted && authStore.token) {
+          const response = await fetch('http://localhost:8000/api/notes/', {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+            },
+          });
+
+          if (response.ok) {
+            const notes = await response.json();
+            console.log('Fetched notes:', notes);
+            setNotes(notes);
+          } else {
+            console.error('Failed to fetch notes. Status:', response.status);
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+
+    fetchNotes();
+
+    // Cleanup function to set isMounted to false when the component is unmounted
+    return () => {
+      isMounted = false;
+    };
+  }, [authStore.token]);
+
+  const handleAddNotes = async (event) => {
     event.preventDefault();
 
     // Validation
@@ -58,24 +91,38 @@ const Home = () => {
       setCategoryError('');
     }
 
-    // Update the UI without backend interaction
-    setNotes((prevNotes) => [
-      { title, content, priority, category, id: Date.now() },
-      ...prevNotes,
-    ]);
-    saveNotesToLocalStorage([
-      { title, content, priority, category, id: Date.now() },
-      ...notes,
-    ]);
+    try {
+      const response = await fetch('http://localhost:8000/api/notes/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authStore.token}`,
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          priority,
+          category,
+        }),
+      });
 
-    // Reset formSubmitted state after submission
-    // (Note: Uncomment the following line if setFormSubmitted is necessary)
-    // setFormSubmitted(false);
+      if (response.ok) {
+        const newNote = await response.json();
+        setNotes((prevNotes) => [newNote, ...prevNotes]);
+        // Update local storage if needed
+        saveNotesToLocalStorage([newNote, ...notes]);
 
-    setTitle('');
-    setContent('');
-    setPriority('');
-    setCategory('');
+        // Reset form fields after successful addition
+        setTitle('');
+        setContent('');
+        setPriority('');
+        setCategory('');
+      } else {
+        console.error('Failed to add note');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
   // Edit Notes

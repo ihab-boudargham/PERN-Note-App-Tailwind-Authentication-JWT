@@ -44,9 +44,8 @@ export const signUp: RequestHandler<
   SignUpBody,
   unknown
 > = async (req, res) => {
-  const name = req.body.name;
-  const email = req.body.email;
-  const password = req.body.password;
+  const { name, email, password } = req.body;
+  console.log('Received data:', { name, email, password });
 
   try {
     if (!name || !email || !password) {
